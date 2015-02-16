@@ -5,8 +5,11 @@ import pickle as pickle
 
 from requests import put
 
-from api._logging import logger
+from api._logging import setup
 from api.trading import trade, brokers
+
+
+logger = setup('Rest Client')
 
 
 def get_close(symbol, date):
@@ -26,11 +29,12 @@ def get_close(symbol, date):
         raise Exception('Data not found')
 
 
-def send_trades(trade_list):
+def send_trades(trade_list, verbose=False):
     url = 'http://localhost:5000/'
     data = {'trade_list': pickle.dumps(trade_list)}
-    for t in trade_list:
-        logger.info('Sending Trade: {}'.format(t))
+    if verbose:
+        for t in trade_list:
+            logger.info('Sending Trade: {}'.format(t))
     resp = put(url + 'trade/', data=data)
     status = resp.status_code
     if status == 200:
@@ -54,8 +58,15 @@ trade_list = [trade(account='GLOBALMN',
                     px=p,
                     broker=brokers.ms) for s, p, sh in zip(symbols, prices, shrs)]
 
-trade_len = send_trades(trade_list)
+trade_len = send_trades(trade_list, verbose=True)
 logger.info('Number of Trades: {}'.format(trade_len))
+
+logger.info('Starting trading')
+for i in xrange(0, 1000):
+    send_trades(trade_list)
+logger.info('Done trading')
+
+
 
 
 
